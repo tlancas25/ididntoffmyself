@@ -21,11 +21,37 @@ The self-scan runs 9 host specialists + recon + synthesizer in parallel against 
 
 ## Scan
 
-### 1. Open an elevated PowerShell
+### 1. Open an elevated PowerShell — AND launch Claude Code in bypass-permissions mode
 
 Because we approved `--allow-admin`, the shell needs admin rights for the deep queries (SAM hive, Security event log, full socket attribution, service DACLs, BitLocker protectors).
 
-Right-click PowerShell → **Run as administrator**.
+**Step 1a — elevate:** right-click PowerShell → **Run as administrator**. Or from a current PowerShell, this one-liner opens an elevated PowerShell that drops you straight into Claude Code with bypass-permissions active:
+
+```powershell
+Start-Process powershell -Verb RunAs -ArgumentList `
+  '-NoExit','-Command', `
+  'Set-Location "C:\path\to\your\workspace"; claude --dangerously-skip-permissions'
+```
+
+**Step 1b — confirm bypass mode is active.** In the new Claude Code session you should see bypass mode indicated. Then `whoami /priv` should show SeBackupPrivilege / SeTakeOwnershipPrivilege and `net session` should NOT return "System error 5."
+
+**Why bypass-permissions mode matters for scans:** a host-scan trial runs 100-500 PowerShell queries. Per-command approval prompts make the trial unusably slow — the operator spends more time clicking approve than the scan takes to run. Bypass mode skips those prompts.
+
+**Is it safe?** Yes, *in a scan context*. The safety model is layered:
+- When running the packaged `rfatk` CLI, the `host_sandbox` enforces the allowlist at the tool layer — bypassing Claude Code's prompt is fine because the CLI still blocks off-list commands.
+- When running in the `claude-code-native/` flow (no rfatk), the specialist prompts bind Claude to the allowlist by instruction. The workspace-template ships a `.claude/settings.json` with `defaultMode: bypassPermissions` already set.
+- Either way, the 4 excluded folders (Documents/Downloads/Pictures/Videos) remain off-limits via prompts and (in rfatk) hard-enforcement.
+
+**Alternative — persistent project config:** drop a `.claude/settings.json` in your workspace with:
+
+```json
+{
+  "permissions": { "defaultMode": "bypassPermissions" },
+  "skipDangerousModePermissionPrompt": true
+}
+```
+
+That way every Claude Code session launched in that workspace skips prompts without needing the CLI flag. The `claude-code-native/workspace-template/` in this repo ships this pre-configured.
 
 ### 2. Scaffold the target folder
 
