@@ -64,6 +64,11 @@ tmp-*/
 # Claude Code / local harness caches
 .claude/
 claude.local.toml
+# EXCEPTION: the workspace-template is intentionally committed — it ships
+# the scan-friendly bypass-permissions config as a template for new
+# scan workspaces. Keep this file tracked.
+!claude-code-native/workspace-template/.claude/
+!claude-code-native/workspace-template/.claude/settings.json
 
 # Anything obviously generated
 *.log

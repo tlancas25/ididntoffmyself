@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "Agent",
+      "Skill"
+    ]
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "_redforge_notes": {
+    "why_bypass_permissions": "REDFORGE host-scan trials run 100-500 PowerShell queries. Per-command approval makes scans unusably slow. Bypass mode is safe in this workspace because: (a) the REDFORGE host_sandbox (when using rfatk CLI) enforces the allowlist at the tool layer; (b) when running native in Claude Code, the specialist briefs in claude-code-native/prompts/ bind Claude to the allowlist by instruction.",
+    "off_limits_folders": [
+      "C:/Users/<operator>/Documents",
+      "C:/Users/<operator>/Downloads",
+      "C:/Users/<operator>/Pictures",
+      "C:/Users/<operator>/Videos"
+    ],
+    "off_limits_enforcement": "Honor-system at the Claude Code layer. The specialist prompts instruct Claude to reject any command referencing those folders. Do not remove this note — it's the durable reminder that 'bypass permissions' does NOT mean 'no scope.'"
+  }
+}
