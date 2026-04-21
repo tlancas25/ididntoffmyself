@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "additionalDirectories": [],
+    "deny": [
+      "Read(C:\\Users\\*\\Documents\\**)",
+      "Read(C:\\Users\\*\\Downloads\\**)",
+      "Read(C:\\Users\\*\\Pictures\\**)",
+      "Read(C:\\Users\\*\\Videos\\**)",
+      "Read(C:\\Users\\*\\Documents\\Projects\\redforge-dev\\**)",
+      "WebFetch",
+      "WebSearch"
+    ]
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "env": {
+    "REDFORGE_LIVE_SCOPE": "C:\\redforge-live"
+  }
+}
