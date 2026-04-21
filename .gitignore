@@ -73,3 +73,10 @@ claude.local.toml
 # Anything obviously generated
 *.log
 *.tmp
+
+# redforge-live: local state / runtime artifacts never ship to repo
+redforge-live/state/baseline.json
+redforge-live/state/incoming-diff.json
+redforge-live/state/alerts.jsonl
+redforge-live/state/alerts.md
+redforge-live/state/last-run.txt
