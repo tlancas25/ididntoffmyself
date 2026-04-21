@@ -187,13 +187,19 @@ This is why defense-in-depth matters:
 
 ---
 
-## Root Cause: Second-Hand Hardware
+## Root Cause: Proctoring-Scam Re-Victimization + Anti-Forensic Timestomp
 
-The machine was purchased from a thrift store. Forensic timeline analysis revealed that the ScreenConnect installation (June 2025) predates the Windows installation (September 2025), meaning the machine was sold already compromised. The attacker's LSA Authentication Package — a DLL loaded into the Windows credential management process at every boot — survived whatever reset was performed before sale.
+**(Revised 2026-04-21 — supersedes prior "Second-Hand Hardware" framing.)**
 
-Within 24 hours of the new Windows setup, the attacker detected the machine coming back online through their existing ScreenConnect access and began deploying additional payloads.
+The real attack vector was a **social-engineering proctoring scam** targeting the operator during their online-proctored exam coursework. On **2025-08-29**, the attacker — using the login handle `dr.jamespaul` (or similar variant) in the remote-control operator interface — contacted the operator posing as an online exam proctor and directed installation of **UltraViewer** (a legitimate free remote-access tool) plus a second remote-control program. The attacker then used the remote session to install additional software, reconfigure system settings, and wipe `%TEMP%` to cover installer traces.
 
-**Takeaway:** Second-hand computers must be clean-installed from official Microsoft media created on a trusted device. "Factory reset" and "Reset this PC" do not reliably remove deep persistence mechanisms like LSA authentication packages, boot-sector implants, or firmware-level threats.
+On **2025-09-07**, the operator reinstalled Windows after judging the post-Aug-29 system state suspicious. One day later (**2025-09-08**), the same social-engineering vector hit again — the operator installed `ProctorU.1.29.win.06.exe` believing it was legitimate proctoring software. Because online proctoring is a recognized requirement of the operator's coursework, the attacker's imposter proctoring tools were tolerated through the proctored-exam period (Sep 2025 – Mar 2026). The operator began manually deleting attacker programs in **March 2026** once coursework ended; REDFORGE was run in **April 2026** and surfaced the remaining persistence residue.
+
+**Anti-forensic timestomp — smoking gun (discovered 2026-04-21):** The `ScreenConnect.WindowsAuthenticationPackage.dll` on disk appears dated 2025-06-09, but the parent directory that contains it has an `$SI` creation timestamp of 2026-01-07. A file cannot predate its parent directory — the 2025-06-09 date is a deliberate artifact of `SetFileTime()` called by the attacker to create the impression of pre-existing compromise (originally misleading investigators into a "thrift-store pre-compromise" theory). MITRE ATT&CK **T1070.006**. The actual 2026-01-07 deployment date matches the independently-verified `game.exe` (AsyncRAT) drop, indicating a coordinated multi-payload push.
+
+**Takeaway:** Students running online-proctored exams are being actively targeted by impersonation-based remote-access scams using legitimate free tools (UltraViewer, TeamViewer, AnyDesk, and similar). If a proctor or instructor asks you to install remote-access software before an exam, **call your institution's IT help desk** and get written confirmation of the expected software and setup procedure before complying. Treat any unsolicited "exam setup" contact as a scam until proven otherwise. The attacker's ability to mimic legitimate proctoring infrastructure — particularly naming their malware after real products like `ProctorU.exe` — makes this vector highly effective against students under exam-period time pressure.
+
+**Related tradecraft observed:** `SetFileTime()` timestomp with parent-directory-mismatch artifact (T1070.006), `%TEMP%` deletion to hide installer traces (T1070.004), Defender-exclusion weaponization (T1562.001, documented separately in the MSRC report).
 
 ---
 

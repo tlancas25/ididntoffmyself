@@ -57,33 +57,49 @@ An active multi-channel compromise was discovered, contained, investigated, and 
 
 ---
 
-## Initial Access Vector — CORRECTED 2026-04-21
+## Initial Access Vector — CORRECTED 2026-04-21 (v2)
 
-**Pre-compromised hardware at resale.** Forensic follow-up on 2026-04-21 (see `FINDINGS.md` in this directory) definitively ruled out the Microsoft Activation Scripts (MAS) runs as the initial access vector. The ScreenConnect LSA Authentication Package DLL is timestamped **2025-06-09**, and the full ScreenConnect install completed **2025-06-13** — both dates precede the current Windows 11 installation (OOBE **2025-09-07 17:49:59**, confirmed by WMI `Win32_OperatingSystem.InstallDate`, HKLM registry `InstallDate`, and `C:\Windows\Panther\unattend.xml`). The backdoor therefore cannot have been delivered by any action taken on the current OS install.
+**Social-engineering proctoring scam + anti-forensic timestomp.** A deeper forensic follow-up on the evening of 2026-04-21, informed by operator recollection of the actual intrusion, overturned both the original "MAS script" claim AND the first correction's "pre-compromised hardware" theory. The actual attack sequence:
 
-The attacker's LSA authentication package loaded into `lsass.exe` at every boot; whatever reset was performed before the machine was resold did not clean the LSA registry or the binary path. Within hours of the new OS install going online, the attacker's existing ScreenConnect access was re-established and they began deploying fresh payloads (first drop: `syslog.exe` on **2025-09-08**, Day 1 post-install).
+1. **2025-08-29** — Operator received social-engineering contact posing as an online exam proctor. The attacker's login handle inside the remote-control operator interface was `dr.jamespaul` (or a close variant). Under the pretext of "setting up" a proctored exam, the attacker instructed the operator to install **UltraViewer** (a legitimate free remote-access tool) and a second remote-control program (operator recalled "something like duet" — exact name not preserved). The attacker used the remote session to install additional software, reconfigure system settings, and **wipe `%TEMP%`** to cover installer traces.
+2. **2025-09-07 17:49:59** — Operator reinstalled Windows 11 on the main partition after judging the post-Aug 29 system state suspicious.
+3. **2025-09-08** (Day 1 post-install) — The same social-engineering vector hit again. Operator installed `ProctorU.1.29.win.06.exe` (12.9 MB) believing it was legitimate proctoring software. Defender later classified it as `Trojan:MSIL/Zilla.IVK!MTB`.
+4. **2025-09-30** — `IsCompleted.exe` scheduled task deployed (`Count\` folder — authentic creation timestamp).
+5. **2025-11 through 2026-03** — Operator actively used the machine for proctored courses, tolerating the "proctoring software" they believed was required for coursework. Defender detected attacker activity 30+ times via AMSI across this window. Attacker eventually escalated to the Defender-exclusion tampering (separately documented in `MSRC-report.md`).
+6. **2026-01-07** — **Coordinated multi-payload re-deployment.** `C:\Program Files (x86)\Windows VC\` folder created (ScreenConnect re-planted), `game.exe`/AsyncRAT dropped, new Defender exclusions pushed. Attacker timestomped the ScreenConnect DLL to `2025-06-09` via `SetFileTime()` as anti-forensics — a deliberate red herring suggesting pre-existing compromise.
+7. **2026-03** — Operator's proctored courses ended. Operator began manually deleting attacker programs (UltraViewer and siblings).
+8. **2026-04-20** — REDFORGE scan found the surviving persistence residue (LSA Auth Package DLL, scheduled tasks, registry Run keys, ScreenConnect service) that manual cleanup did not fully remove.
 
-**Forensic confirmation signals:**
-- **No** `ScreenConnect` / `ConnectWise` entries in HKLM, HKLM-Wow6432, or HKCU Uninstall hives.
-- **No** `MsiInstaller` Application-log events for ScreenConnect at any point on this install.
-- **No** System-log 7045 service-install events for the "Visual C++" service name (System log retention floor is 2025-12-19, so the original June 2025 event aged out — but no subsequent install events either).
-- Earliest PowerShell `ConsoleHost_history.txt` timestamp: **2025-09-07 20:17:50** (28 minutes after OOBE completed) — temporally incompatible with the June 2025 ScreenConnect files.
-- Registered owner at OOBE was the current operator's Microsoft account, confirming a fresh OOBE (not an inherited running install).
+### 🎯 Timestomp — smoking gun
 
-### Separate risk-behavior observation (not the initial vector)
+The ScreenConnect DLL on disk appears dated 2025-06-09, but:
 
-**PowerShell history reveals 6 executions of:**
-```powershell
-irm https://get.activated.win | iex
+```
+File:    C:\Program Files (x86)\Windows VC\ScreenConnect.WindowsAuthenticationPackage.dll
+  $SI CreationTime : 2025-06-09 19:34:52     ← impossible (see below)
+
+Parent directory: C:\Program Files (x86)\Windows VC\
+  $SI CreationTime : 2026-01-07 18:44:50     ← actual deployment date
 ```
 
-This is the Microsoft Activation Scripts (MAS) piracy tool. Even if one of these runs delivered a trojanized payload (via source compromise, DNS-spoof, or phishing clone), it could not have been responsible for the original foothold — the earliest possible MAS run is ~3 months after ScreenConnect was already present on the hardware. A trojanized MAS run could plausibly explain a later-stage drop (e.g. `data.exe`, 2026-03-13) but that causal chain is unproven.
+**A file cannot be created before its parent directory exists.** The 2025-06-09 date on the DLL is mathematically impossible — the folder it lives in wasn't created until 2026-01-07. The attacker called `SetFileTime()` to backdate the DLL but did not stomp the parent directory's `$SI` timestamp, leaving a forensically-detectable discrepancy. MITRE ATT&CK **T1070.006 (Timestomp)**.
 
-**HOSTS file sinkholing** of license servers for Noregon JPRO and CCleaner (`license.piriform.com`, `jpro.noregon.com` redirected to 127.0.0.1) confirms a pattern of pirated software use on this machine — elevated risk behavior, but not the original foothold source.
+The 2026-01-07 date matches the independently-verified `game.exe` / AsyncRAT drop date from the original scan — strongly suggesting a coordinated multi-payload push by the attacker on that day.
+
+### Attacker indicators (public-interest threat intel)
+
+- **Social-engineering handle** observed in remote-control operator UI: `dr.jamespaul` (or similar variant). Public so other victims / investigators can pattern-match.
+- **Remote-control tools abused**: **UltraViewer** (confirmed), plus a second unidentified tool.
+- **ScreenConnect C2 relay**: `edgeserv.ru:8041` (95.214.234.238 — vsys.host, Russia) — unchanged from original scan.
+- **MITRE techniques**: T1566 (Phishing) → T1219 (Remote Access Software) → T1070.006 (Timestomp) → T1547.002 (LSA Auth Package) → T1562.001 (Disable/Modify Tools — Defender).
+
+### Separate risk-behavior observation (unchanged)
+
+The MAS PowerShell runs (`irm https://get.activated.win | iex` × 6) remain a separate piracy-risk observation — not the initial access vector. They were temporally incapable of delivering the original foothold, which occurred via the Aug 29 proctoring scam. **HOSTS file sinkholing** of license servers for Noregon JPRO and CCleaner confirms an elevated piracy-risk behavior pattern but not a foothold source.
 
 ### Secondary observation — TeamViewer (second RMM)
 
-Uninstall registry + System-log 7045 events show **TeamViewer** installed and reinstalled multiple times between Jan–Apr 2026. This is a legitimate user-installed RMM, separate from the attacker's ScreenConnect channel. Having two RMMs on a single machine materially expands the remote-access attack surface; recommend removing TeamViewer if not actively in use.
+Uninstall registry + System-log 7045 events show **TeamViewer** installed and reinstalled multiple times between Jan–Apr 2026. Legitimate user-installed RMM, separate from the attacker's ScreenConnect channel. Recommend removing TeamViewer if not actively in use — two RMMs on one machine materially expands remote-access attack surface.
 
 ---
 

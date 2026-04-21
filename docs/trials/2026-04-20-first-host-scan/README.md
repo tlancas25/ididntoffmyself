@@ -12,29 +12,28 @@
 
 The first REDFORGE host-scan trial was intended to generate a preventative hardening baseline on the lead developer's personal machine. Within minutes, the `persistence-hunt` specialist surfaced indicators of an active, multi-channel compromise. The scan pivoted to a full incident response and discovered:
 
-- **8 malware binaries** deployed over ~10 months (Jun 2025 – Mar 2026)
+- **8 malware binaries** deployed over ~7 months (Aug 2025 – Mar 2026)
 - **3 independent C2 channels** (ScreenConnect RMM to a Russian relay, a custom HTTPS beacon, and a Microsoft-signed LOLBin proxy)
 - **Comprehensive Defender neutralization** via exclusion tampering, cloud-protection disablement, and ASR-rule wipe
 - **Russian threat actor** attribution (VMProtect-signed binary with Ekaterinburg registration; `.ru` relay infrastructure)
 
-The compromise predated the current Windows install — the thrift machine arrived already backdoored via an LSA Authentication Package that survived the pre-sale reset.
+The compromise originated in a **social-engineering proctoring scam** on 2025-08-29 (attacker handle `dr.jamespaul` in the remote-control operator interface) with same-vector re-victimization on 2025-09-08 via `ProctorU.1.29.win.06.exe`. The attacker used `SetFileTime()` to **timestomp** ScreenConnect files back to June 2025 as anti-forensics — a deliberate red herring that initially misled investigation toward a pre-compromised-hardware theory. See Correction below + `FINDINGS.md` for the decisive timestomp evidence.
 
 ---
 
-## Correction — 2026-04-21
+## Correction — 2026-04-21 (v2 — supersedes v1)
 
-The original `post-cleanup-report` (now `scan-post-cleanup-report.md`) framed the Microsoft Activation Scripts (MAS) runs found in PowerShell history as the "most likely initial access vector." **That framing was wrong.**
+This trial's initial-access narrative has been revised twice as evidence emerged. The trail is documented in full so readers see the investigative arc, not just the final answer:
 
-A forensic follow-up on 2026-04-21 (see `FINDINGS.md`) confirmed the initial access vector was **pre-compromised hardware at resale**, not MAS:
+1. **Original claim (2026-04-20):** MAS PowerShell runs (`irm https://get.activated.win | iex`) were the likely initial access vector.
+2. **First correction (2026-04-21 morning):** Ruled MAS out as temporally impossible. Attributed initial access to **pre-compromised hardware at resale** (ScreenConnect files appeared dated before the Windows install date).
+3. **Second correction (2026-04-21 evening — this one):** Operator recollection + deeper `$SI` timestamp forensics invalidated *both* prior theories. Actual vector was a **social-engineering proctoring scam** on **2025-08-29** in which the attacker, using the login handle `dr.jamespaul` (or variant) inside the remote-control operator UI, instructed the operator to install **UltraViewer** plus a second remote-control tool under the pretext of exam-proctor setup. The ScreenConnect files appearing to be from 2025-06-09 were **timestomped** (`SetFileTime()`) as anti-forensics — the containing folder's `$SI CreationTime` is 2026-01-07, and a file cannot predate its parent directory, proving backdating. Actual ScreenConnect deployment date: **2026-01-07**, matching the independently-verified `game.exe`/AsyncRAT drop.
 
-- Windows 11 OOBE on this machine: **2025-09-07 17:49:59** (confirmed by WMI, registry, and Panther logs — four independent sources agree).
-- ScreenConnect LSA Authentication Package DLL timestamp: **2025-06-09** — three months BEFORE the current Windows install.
-- Earliest possible MAS run: ~28 minutes after OOBE completed on 2025-09-07 — temporally incompatible with the June 2025 ScreenConnect files.
-- Zero `ScreenConnect` / `ConnectWise` entries in any Uninstall registry hive, and zero MSI install events in the Application log — confirming ScreenConnect was not installed via Windows Installer on this OS.
+Revised public narrative: **student-targeted proctoring-scam re-victimization with sophisticated anti-forensics (`SetFileTime()` timestomp, `%TEMP%` wipe, Defender-exclusion tampering).** Active attacker dwell was ~7 months (Aug 2025 – Mar 2026). The operator did not experience a passive "unwitting 10-month compromise" — they *tolerated* the "proctoring software" during their proctored-exam coursework because they believed it was required, and manually began deleting it in March 2026 once courses ended. REDFORGE was run April 2026 and surfaced the residual persistence that manual cleanup missed.
 
-`scan-post-cleanup-report.md` § "Initial Access Vector" has been rewritten. The MAS runs are now documented as a separate piracy-risk observation, not the foothold. Also added: secondary observation on a legitimately-installed **TeamViewer** (second RMM on the machine, separate from the attacker's channel).
+**Headline lesson shifts** from "check second-hand hardware" to **"verify any proctor or instructor who asks you to install remote-access software before an exam — call your institution's IT help desk and get written confirmation before complying."** Second-hand hardware *is* a real vector worth worrying about; it just wasn't the vector here.
 
-Public-narrative impact: this is an even stronger story for "second-hand hardware carries persistent malware" — the headline lesson for consumer buyers. Lesson: **factory reset is not clean install.**
+See `FINDINGS.md` for the decisive timestomp evidence and the full revised timeline.
 
 ---
 
