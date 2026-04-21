@@ -1,0 +1,76 @@
+REDFORGE — PROPRIETARY LICENSE
+
+Copyright (c) 2026 BlaFrost Softwares Corp. All rights reserved.
+
+Lead developer: Terrell A. Lancaster
+Powered by: Claude Code, running Opus 4.7 (Anthropic PBC)
+
+1. OWNERSHIP
+
+   The software, prompts, agent briefs, methodology documents, tests,
+   schema definitions, and all associated written material in this
+   repository (collectively, the "Software") are the sole and exclusive
+   intellectual property of BlaFrost Softwares Corp ("BlaFrost").
+
+2. GRANT OF USE
+
+   No license, express or implied, is granted to any party other than
+   BlaFrost employees, contractors, and partners expressly designated in
+   writing by Terrell A. Lancaster or a duly authorized officer of BlaFrost.
+
+   The Software is NOT released under an open-source license. The Software
+   is NOT authorized for public use, redistribution, derivative works, or
+   commercial use by any party other than BlaFrost.
+
+3. RESTRICTIONS
+
+   Except as expressly authorized in writing by BlaFrost, no person or
+   entity may:
+
+   (a) copy, modify, merge, publish, distribute, sublicense, or sell the
+       Software or any substantial portion of it;
+
+   (b) use the Software against any target (codebase, host, network, or
+       LLM-backed system) for which the user does not have explicit written
+       authorization to test;
+
+   (c) remove or alter any copyright, trademark, or attribution notices in
+       the Software;
+
+   (d) use any BlaFrost trademark, including "BlaFrost Softwares Corp" and
+       "REDFORGE," without prior written consent.
+
+4. THIRD-PARTY MODELS AND SERVICES
+
+   The Software is designed to call LLM provider APIs (Anthropic, OpenAI,
+   Google, Moonshot, xAI, DeepSeek, Groq, Together, Cerebras, Ollama, and
+   llama.cpp). Use of any such service is governed by that service's own
+   terms, which the user is responsible for complying with. The Software
+   requires bring-your-own API key and expressly refuses to reuse Claude
+   Code OAuth credentials in third-party contexts.
+
+   All vendor marks are the property of their respective owners and are
+   referenced only to document provider support.
+
+5. WARRANTY DISCLAIMER
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+6. LIMITATION OF LIABILITY
+
+   IN NO EVENT SHALL BLAFROST, ITS OFFICERS, OR ITS CONTRIBUTORS BE LIABLE
+   FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM USE OF THE
+   SOFTWARE, INCLUDING BUT NOT LIMITED TO ANY LIABILITY ARISING FROM THE
+   USER'S RUN OF THE SOFTWARE AGAINST A TARGET FOR WHICH THEY DID NOT
+   HAVE PROPER AUTHORIZATION.
+
+7. TERMINATION
+
+   Any use of the Software outside the scope of this license terminates
+   all rights granted to the user and entitles BlaFrost to pursue all
+   available remedies.
+
+For licensing inquiries, partnership, or authorized distribution, contact
+BlaFrost Softwares Corp via Terrell A. Lancaster.

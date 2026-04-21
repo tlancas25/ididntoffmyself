@@ -1,0 +1,27 @@
+target_id: tiny-target
+timestamp: 20260101T000000Z
+provenance: human
+code_source: tests/fixtures/tiny-target/intake
+scope:
+  in:
+    - app.py
+    - db.py
+    - users.py
+    - requirements.txt
+    - Dockerfile
+  out:
+    - []
+authorization:
+  granted_by: redforge-attack test suite
+  granted_at: 2026-01-01T00:00:00Z
+  note: "Synthetic fixture target; planted SQLi in db.find_user_by_email + IDOR in users.list_user_notes. Any automated trial against this fixture is authorized."
+surfaces_declared:
+  - web
+  - injection
+  - idor
+  - container
+notes: |
+  This is a REDFORGE integration-test fixture. Planted findings (ground truth):
+  - INJECTION (HIGH): db.find_user_by_email uses f-string concat -> SQLi
+  - IDOR (HIGH): users.list_user_notes / create_user_note have no ownership check
+  - CONTAINER (MEDIUM): Dockerfile final stage runs as root

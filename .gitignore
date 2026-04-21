@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+ENV/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+*~
+
+# Secrets — NEVER commit
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.pfx
+*.p12
+
+# ------------------------------------------------------------------
+# REDFORGE-specific — operational artifacts never belong in the repo
+# ------------------------------------------------------------------
+
+# Trial artifacts (target findings, raw scans, per-trial evidence).
+# These contain target-specific and potentially sensitive content from
+# real pentest runs. Scrubbed reports are published separately.
+/targets/
+**/targets/
+!**/targets/README.md       # We DO want the folder-schema doc checked in
+!**/targets/**/README.md
+
+# Session / dev-workspace memory log. Contains specific target refs.
+# The repo ships a MEMORY.md TEMPLATE under workspace-template/ — that's fine.
+# Real session logs stay local.
+/MEMORY.md
+/notes/
+/scans/
+/promotion-queue/
+
+# rfatk-cli integration tmp dirs
+smoke-run/
+tmp-*/
+
+# Claude Code / local harness caches
+.claude/
+claude.local.toml
+
+# Anything obviously generated
+*.log
+*.tmp
