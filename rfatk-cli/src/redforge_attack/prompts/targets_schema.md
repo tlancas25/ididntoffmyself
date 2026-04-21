@@ -77,7 +77,13 @@ Each specialist agent writes `agents/<agent-id>/findings.json` as a JSON array. 
   "cwe": ["CWE-xxx"],
   "attack_chain": ["<finding-id>", "..."],
   "novel_pattern": true,
-  "discovered_at": "<ISO-8601 UTC>"
+  "discovered_at": "<ISO-8601 UTC>",
+
+  // Optional — populated by forensic-deepdive and host specialists (post-2026-04-20 trial):
+  "anti_forensics": ["T1070.006-timestomp", "T1070.004-temp-wipe", "T1562.001-defender-tamper-loop"],
+  "misdirection_indicators": ["<short description of what false theory the attacker wanted investigator to land on>"],
+  "install_trace_status": "traced | no_install_traces_expected_portable | no_install_traces_suspicious | timestomped",
+  "operator_narrative_aligned": true
 }
 ```
 
@@ -94,6 +100,7 @@ Summarized here; full binding brief in bundled `specialists.md`.
 - **§5 No speculative chaining.** Score severity on weakest actually-present link.
 - **§6** `exploitable_now: false` → Hardening Recommendations, not main list.
 - **§7** Label reproduction honestly (default `code-path-traced`).
+- **§8 Anti-forensics awareness (added 2026-04-21 after Trial #1 v2 correction).** If a file's `$SI CreationTime` predates its parent directory's `$SI CreationTime`, that's proof of `SetFileTime()` timestomping (T1070.006) — populate `anti_forensics: ["T1070.006-timestomp"]` and `misdirection_indicators` with the false theory the apparent-age was designed to create. Parent-dir `$SI` is the authoritative deployment date unless the parent is also stomped. The `forensic-deepdive` specialist automates this check on every flagged attacker file; upstream specialists should flag any suspicious timestamp they notice even if they don't run the full check themselves. **Never let a timestamp be the sole basis of a root-cause theory** — cross-check with parent-dir `$SI`, `MsiInstaller` events, `7045` service-install events, and operator narrative.
 
 ## `report.md` structure (written by the synthesizer — `rfatk report`)
 

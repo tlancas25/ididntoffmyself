@@ -201,3 +201,33 @@ auxiliary:
       - methodology gaps
     inputs_required: ["intake/prior-*"]
     runs_after: [synthesizer]
+
+  - id: forensic-deepdive
+    role: "Anti-forensic artifact hunt — runs after all host specialists. Checks every suspect file for timestomp (parent-dir $SI mismatch), install-trace absence, wipe patterns, coordinated-push clustering, impersonation naming, and Defender tolerated-malware loops."
+    surface: "persistence"
+    covers:
+      - parent-directory $SI mismatch timestomp detection (T1070.006)
+      - install-trace reconciliation (Uninstall registry, MsiInstaller, 7045, Panther, SetupAPI, AppX, RelMon)
+      - anti-forensic wipe patterns (empty Prefetch, disabled Task History, reduced event-log retention, disabled VSS)
+      - coordinated multi-payload push clustering (grouping attacker file creations by hour)
+      - impersonation-name fingerprint (malware named after legitimate products)
+      - Defender tolerated-malware loops (repeat detections without removal => T1562.001 tampering)
+    runs_after: [recon, persistence-hunt, services-startup, network-listening, network-posture, credentials-exposure, windows-config-audit, firewall-audit, local-subnet-sweep, alert-triage]
+    added: "2026-04-21 (post-Trial-1 v2 correction)"
+    rationale: "Trial #1 had an attacker who SetFileTime()-backdated ScreenConnect files 7 months to mislead investigators toward 'pre-existing compromise' theory. Parent-dir $SI mismatch broke the misdirection. This check runs on every trial from now on."
+
+  - id: investigator
+    role: "Meta-review for adversary misdirection. Runs LAST, after synthesizer. Reviews all specialist findings collectively for: theory consistency, adversary misdirection, operator-narrative alignment, theory stability, missing-evidence catalog. Non-execution - purely analytical."
+    surface: "meta"
+    covers:
+      - theory consistency check (are findings contradicting?)
+      - adversary misdirection scan (timestomp, fake paths, impersonation names, red-herring root causes, artifact wipe)
+      - operator-narrative alignment (operator memory weighted against attacker-controllable timestamps)
+      - theory stability and alternatives (don't over-commit)
+      - missing-evidence catalog (admin-gated queries skipped, post-reboot queries, etc.)
+      - confidence statement per root-cause theory
+      - CRITICAL contradiction flag if any finding invalidates synthesizer's primary theory
+    output: "agents/investigator/review.md (NOT a findings.json)"
+    runs_after: [synthesizer, forensic-deepdive]
+    added: "2026-04-21 (post-Trial-1 v2 correction)"
+    rationale: "Trial #1 locked onto wrong initial-access theories twice before correcting. Systematic end-of-trial 'what might we be missing' pass catches lock-in BEFORE the report ships. Never let a trial publish with the investigator having unreviewed contradictions."

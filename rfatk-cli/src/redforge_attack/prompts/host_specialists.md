@@ -306,3 +306,31 @@ For each new Defender detection or new Security/Defender-Operational event, emit
 - Recently-created scheduled task (Created in last 30 days) running with SYSTEM and a hash-unknown binary.
 
 **Hardening plan template:** remove the persistence artifact; enable `Audit process creation` + Sysmon event 1 + CLM for PowerShell; consider WDAC policy to block execution from user-writable paths.
+
+**Anti-forensics awareness** (added after 2026-04-20 trial): every persistence artifact you flag gets re-examined by the `forensic-deepdive` specialist for (1) parent-directory `$SI` timestomp mismatch, (2) install-trace reconciliation, (3) impersonation-name fingerprint. You don't need to do those yourself — just flag the artifact with good `target_refs` and let `forensic-deepdive` run the checks. If YOU notice a timestamp that looks implausible (e.g., an LSA Auth Package DLL dated a year ago on a machine installed last month), mention it in `notes.md` so the next specialist picks it up.
+
+---
+
+## `forensic-deepdive` — anti-forensics + timestomp hunt
+
+**Full brief:** see `forensic-deepdive.md` in the bundled prompts.
+
+**Focus:** runs AFTER all other host specialists. For every file they flagged, systematically checks for timestomping (parent-dir `$SI` mismatch), missing install traces, anti-forensic wipe patterns (empty Prefetch, disabled Task History, reduced event-log retention), coordinated-push clustering, impersonation naming, and Defender tolerated-malware loops.
+
+**Why this specialist exists:** the first real-world trial (2026-04-20) had an attacker who used `SetFileTime()` to backdate ScreenConnect files by 7 months as a red herring. The misdirection worked against the first investigation pass. Running this check systematically, on every trial, is the defense.
+
+**Signature output:** findings with `anti_forensics` populated (e.g., `["T1070.006-timestomp"]`) and `misdirection_indicators` listing the false-theory the attacker wanted the investigator to land on.
+
+---
+
+## `investigator` — meta-review for adversary misdirection
+
+**Full brief:** see `investigator.md` in the bundled prompts.
+
+**Focus:** runs LAST, after the synthesizer's mechanical aggregation. Reviews all specialist findings collectively for: theory consistency (are any findings contradicting?), adversary misdirection indicators, operator-narrative alignment, theory-stability check, missing-evidence catalog.
+
+**Why this specialist exists:** the 2026-04-20 trial locked onto wrong initial-access theories twice before correcting. A systematic end-of-trial "what might we be missing" pass catches lock-in BEFORE the report ships. Never let a trial publish without this review.
+
+**Output:** `agents/investigator/review.md` with six sections + a `⚠️ CRITICAL: REPORT CORRECTION REQUIRED` flag if any finding invalidates the synthesizer's primary root-cause theory.
+
+**Non-execution** — purely analytical. Does not produce `findings.json`.
