@@ -21,6 +21,23 @@ The compromise predated the current Windows install — the thrift machine arriv
 
 ---
 
+## Correction — 2026-04-21
+
+The original `post-cleanup-report` (now `scan-post-cleanup-report.md`) framed the Microsoft Activation Scripts (MAS) runs found in PowerShell history as the "most likely initial access vector." **That framing was wrong.**
+
+A forensic follow-up on 2026-04-21 (see `FINDINGS.md`) confirmed the initial access vector was **pre-compromised hardware at resale**, not MAS:
+
+- Windows 11 OOBE on this machine: **2025-09-07 17:49:59** (confirmed by WMI, registry, and Panther logs — four independent sources agree).
+- ScreenConnect LSA Authentication Package DLL timestamp: **2025-06-09** — three months BEFORE the current Windows install.
+- Earliest possible MAS run: ~28 minutes after OOBE completed on 2025-09-07 — temporally incompatible with the June 2025 ScreenConnect files.
+- Zero `ScreenConnect` / `ConnectWise` entries in any Uninstall registry hive, and zero MSI install events in the Application log — confirming ScreenConnect was not installed via Windows Installer on this OS.
+
+`scan-post-cleanup-report.md` § "Initial Access Vector" has been rewritten. The MAS runs are now documented as a separate piracy-risk observation, not the foothold. Also added: secondary observation on a legitimately-installed **TeamViewer** (second RMM on the machine, separate from the attacker's channel).
+
+Public-narrative impact: this is an even stronger story for "second-hand hardware carries persistent malware" — the headline lesson for consumer buyers. Lesson: **factory reset is not clean install.**
+
+---
+
 ## What's in this directory
 
 | File | Purpose |
@@ -28,7 +45,8 @@ The compromise predated the current Windows install — the thrift machine arriv
 | [`public-report.md`](public-report.md) | Case-study narrative. Suitable for public consumption. The 4-month adversarial timeline, what Defender did / didn't catch, detection patterns surfaced. |
 | [`MSRC-report.md`](MSRC-report.md) | Formal Microsoft Security Response Center disclosure draft. Documents the **Tamper Protection scope gap** — a real Windows Defender vulnerability where exclusion manipulation, cloud protection, PUA, network protection, and ASR rules are all **outside** Tamper Protection's scope. Includes reproduction steps (2-line PowerShell) and proposed mitigations. |
 | [`scan-report.md`](scan-report.md) | Full REDFORGE raw-bundle output — 79 raw → 46 unique findings across 9 specialists, dedupe clusters, cross-agent attack chains, novel-patterns flagged for detection-rule promotion. |
-| [`scan-post-cleanup-report.md`](scan-post-cleanup-report.md) | IR actions log. Containment / forensics / removal / Defender restoration phases. Credential rotation priorities. Post-cleanup system state verification. |
+| [`scan-post-cleanup-report.md`](scan-post-cleanup-report.md) | IR actions log. Containment / forensics / removal / Defender restoration phases. Credential rotation priorities. Post-cleanup system state verification. **§ "Initial Access Vector" was rewritten 2026-04-21** — see the Correction section above. |
+| [`FINDINGS.md`](FINDINGS.md) | **2026-04-21 forensic follow-up** on the install-vector question. Multi-source timeline reconstruction (WMI / Panther / registry / MsiInstaller event log / Uninstall hives / PS console history) that definitively confirms pre-compromised hardware and rules out the MAS script as the initial foothold. Also flags TeamViewer as a legitimate second RMM on the machine. |
 
 All files are scrubbed per the redaction policy at the top of each file. Operator identifiers are anonymized; threat intel (C2 IPs, malware hashes, MITRE IDs, attribution indicators, Defender detection names) is preserved.
 

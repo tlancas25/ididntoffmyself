@@ -57,20 +57,33 @@ An active multi-channel compromise was discovered, contained, investigated, and 
 
 ---
 
-## Probable Initial Access Vector
+## Initial Access Vector — CORRECTED 2026-04-21
+
+**Pre-compromised hardware at resale.** Forensic follow-up on 2026-04-21 (see `FINDINGS.md` in this directory) definitively ruled out the Microsoft Activation Scripts (MAS) runs as the initial access vector. The ScreenConnect LSA Authentication Package DLL is timestamped **2025-06-09**, and the full ScreenConnect install completed **2025-06-13** — both dates precede the current Windows 11 installation (OOBE **2025-09-07 17:49:59**, confirmed by WMI `Win32_OperatingSystem.InstallDate`, HKLM registry `InstallDate`, and `C:\Windows\Panther\unattend.xml`). The backdoor therefore cannot have been delivered by any action taken on the current OS install.
+
+The attacker's LSA authentication package loaded into `lsass.exe` at every boot; whatever reset was performed before the machine was resold did not clean the LSA registry or the binary path. Within hours of the new OS install going online, the attacker's existing ScreenConnect access was re-established and they began deploying fresh payloads (first drop: `syslog.exe` on **2025-09-08**, Day 1 post-install).
+
+**Forensic confirmation signals:**
+- **No** `ScreenConnect` / `ConnectWise` entries in HKLM, HKLM-Wow6432, or HKCU Uninstall hives.
+- **No** `MsiInstaller` Application-log events for ScreenConnect at any point on this install.
+- **No** System-log 7045 service-install events for the "Visual C++" service name (System log retention floor is 2025-12-19, so the original June 2025 event aged out — but no subsequent install events either).
+- Earliest PowerShell `ConsoleHost_history.txt` timestamp: **2025-09-07 20:17:50** (28 minutes after OOBE completed) — temporally incompatible with the June 2025 ScreenConnect files.
+- Registered owner at OOBE was the current operator's Microsoft account, confirming a fresh OOBE (not an inherited running install).
+
+### Separate risk-behavior observation (not the initial vector)
 
 **PowerShell history reveals 6 executions of:**
 ```powershell
 irm https://get.activated.win | iex
 ```
 
-This is the Microsoft Activation Scripts (MAS) piracy tool. Either:
-1. The legitimate MAS script was trojanized at the source, or
-2. A DNS-spoofed/phishing clone delivered a payload alongside or instead of the activation script
+This is the Microsoft Activation Scripts (MAS) piracy tool. Even if one of these runs delivered a trojanized payload (via source compromise, DNS-spoof, or phishing clone), it could not have been responsible for the original foothold — the earliest possible MAS run is ~3 months after ScreenConnect was already present on the hardware. A trojanized MAS run could plausibly explain a later-stage drop (e.g. `data.exe`, 2026-03-13) but that causal chain is unproven.
 
-The first execution predates all malware deployment dates, making this the most likely initial access vector. The script runs with full admin privileges in PowerShell, providing complete system access.
+**HOSTS file sinkholing** of license servers for Noregon JPRO and CCleaner (`license.piriform.com`, `jpro.noregon.com` redirected to 127.0.0.1) confirms a pattern of pirated software use on this machine — elevated risk behavior, but not the original foothold source.
 
-**HOSTS file sinkholing** of license servers for Noregon JPRO and CCleaner (`license.piriform.com`, `jpro.noregon.com` redirected to 127.0.0.1) confirms a pattern of pirated software use on this machine.
+### Secondary observation — TeamViewer (second RMM)
+
+Uninstall registry + System-log 7045 events show **TeamViewer** installed and reinstalled multiple times between Jan–Apr 2026. This is a legitimate user-installed RMM, separate from the attacker's ScreenConnect channel. Having two RMMs on a single machine materially expands the remote-access attack surface; recommend removing TeamViewer if not actively in use.
 
 ---
 
