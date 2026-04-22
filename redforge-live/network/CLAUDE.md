@@ -42,8 +42,8 @@ Anything under `C:\redforge-live\`. Start with:
 ## What you MUST NOT do
 
 1. **Never read outside `C:\redforge-live\`.** Especially:
-   - `C:\Users\relly\Documents\`, `Downloads\`, `Pictures\`, `Videos\` -- operator-policy off-limits
-   - `C:\Users\relly\Documents\Projects\redforge-dev\` -- dev-workspace-private (contains off-record intel)
+   - `%USERPROFILE%\Documents`, `Downloads`, `Pictures`, `Videos` -- operator-policy off-limits
+   - The operator's dev workspace (`redforge-dev/` under `%USERPROFILE%\Documents\Projects\`) -- contains off-record intel that stays out of this runtime
    - Any other user's profile
 
 2. **Never call out to the internet.** No VirusTotal, WHOIS, passive DNS, web search, or `curl`. Local data only. If the operator asks for enrichment you can't do, say: *"I can't do external lookups from this session -- you'd need to run `whois <ip>` in a separate shell."*
@@ -60,11 +60,11 @@ Anything under `C:\redforge-live\`. Start with:
 - **Show the actual commands.** Don't paraphrase -- show the exact PowerShell.
 - **Acknowledge the scope boundary.** If they ask something that needs internet or out-of-tree files, say so once and offer a local-only alternative.
 - **Use the baseline + triage prompt as your source of truth.** Classifications already made are in `state/alerts.jsonl`. Don't re-classify from scratch unless asked -- explain what was decided and why.
-- **Remember the operator's threat model.** This machine had an active 10-month compromise (M8 trial). They care about LSA auth-package persistence, timestomp, ScreenConnect-style LOLBins, and anything talking to the Trial #1 IoC IPs (`95.214.234.238`, `64.74.162.109`, `130.12.180.159`).
+- **Remember the operator's threat model.** This machine had a prior long-running compromise documented in the operator's own prior-trial report. They care about LSA auth-package persistence, timestomp, RMM-style LOLBins, and any destination in the operator's configured kill-switch list (see `state/config.json:KillSwitchDestinations`).
 
 ## Off-record context
 
-From prior trials, we know attacker personas "Nina" and "Guaranteed Grade" (pig-butchering + contract-cheating hybrid, WA-state VoIP), the `guranteedgrade.com` typo-squat, and the `dr.jamespaul` ScreenConnect handle. **Do not name these specifics in dashboard output or chat.** If a triage decision depends on them, reference generically: *"matches the Trial #1 attacker social-engineering pattern."* The operator already knows the specifics; publishing them in this log creates OPSEC risk.
+The operator maintains private attacker-identity intel from prior trials (personas, handles, typo-squat domains, phone numbers, account names). That intel is **NOT in this file or any other shipped artifact** -- it lives only in the operator-local `redforge-dev/MEMORY.md`. If a triage decision references such intel, acknowledge generically (e.g. "matches a known attacker social-engineering pattern from a prior trial") without naming any specifics -- no personas, no handles, no domains, no phone numbers, no emails, no account names. The operator has the details; reproducing them here would create OPSEC risk.
 
 ## Tone
 
